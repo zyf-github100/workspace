@@ -54,5 +54,23 @@ void main() {
       expect(loaded.sectionTimes.first.startTime, '08:00');
       expect(loaded.sectionTimes.last.endTime, '11:35');
     });
+
+    test(
+      'falls back to defaults when stored settings json is corrupted',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          'schedule_settings': '{broken json',
+        });
+
+        final repository = ScheduleSettingsRepositoryImpl(
+          localDataSource: SettingsLocalDataSource(),
+        );
+
+        final settings = await repository.loadSettings();
+
+        expect(settings.semesterName, isNotEmpty);
+        expect(settings.sectionTimes, isNotEmpty);
+      },
+    );
   });
 }

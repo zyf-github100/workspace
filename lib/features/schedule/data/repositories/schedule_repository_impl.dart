@@ -94,29 +94,37 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     final currentSemesterId = await _localDataSource.loadCurrentSemesterId();
 
     if (semestersJson != null && semestersJson.isNotEmpty) {
-      final decoded = jsonDecode(semestersJson) as List<dynamic>;
-      final semesters = decoded
-          .map((item) => Semester.fromJson(item as Map<String, dynamic>))
-          .toList();
-      final normalizedCurrentSemesterId = semesters.isEmpty
-          ? null
-          : currentSemesterId != null &&
-                semesters.any((semester) => semester.id == currentSemesterId)
-          ? currentSemesterId
-          : semesters.first.id;
-      if (normalizedCurrentSemesterId != currentSemesterId) {
-        await _persistStore(
-          _ScheduleStore(
-            semesters: semesters,
-            currentSemesterId: normalizedCurrentSemesterId,
-          ),
-        );
-      }
+      try {
+        final decoded = jsonDecode(semestersJson) as List<dynamic>;
+        final semesters = decoded
+            .map((item) => Semester.fromJson(item as Map<String, dynamic>))
+            .toList();
+        final normalizedCurrentSemesterId = semesters.isEmpty
+            ? null
+            : currentSemesterId != null &&
+                  semesters.any((semester) => semester.id == currentSemesterId)
+            ? currentSemesterId
+            : semesters.first.id;
+        if (normalizedCurrentSemesterId != currentSemesterId) {
+          await _persistStore(
+            _ScheduleStore(
+              semesters: semesters,
+              currentSemesterId: normalizedCurrentSemesterId,
+            ),
+          );
+        }
 
-      return _ScheduleStore(
-        semesters: semesters,
-        currentSemesterId: normalizedCurrentSemesterId,
-      );
+        return _ScheduleStore(
+          semesters: semesters,
+          currentSemesterId: normalizedCurrentSemesterId,
+        );
+      } on FormatException {
+        await _localDataSource.clearSemestersJson();
+        await _localDataSource.clearCurrentSemesterId();
+      } on TypeError {
+        await _localDataSource.clearSemestersJson();
+        await _localDataSource.clearCurrentSemesterId();
+      }
     }
 
     final legacyJson = await _localDataSource.loadLegacyCurrentSemesterJson();
@@ -127,15 +135,26 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
       );
     }
 
-    final legacySemester = Semester.fromJson(
-      jsonDecode(legacyJson) as Map<String, dynamic>,
+    try {
+      final legacySemester = Semester.fromJson(
+        jsonDecode(legacyJson) as Map<String, dynamic>,
+      );
+      final migratedStore = _ScheduleStore(
+        semesters: <Semester>[legacySemester],
+        currentSemesterId: legacySemester.id,
+      );
+      await _persistStore(migratedStore, clearLegacy: true);
+      return migratedStore;
+    } on FormatException {
+      await _localDataSource.clearLegacyCurrentSemester();
+    } on TypeError {
+      await _localDataSource.clearLegacyCurrentSemester();
+    }
+
+    return const _ScheduleStore(
+      semesters: <Semester>[],
+      currentSemesterId: null,
     );
-    final migratedStore = _ScheduleStore(
-      semesters: <Semester>[legacySemester],
-      currentSemesterId: legacySemester.id,
-    );
-    await _persistStore(migratedStore, clearLegacy: true);
-    return migratedStore;
   }
 
   Future<void> _persistStore(

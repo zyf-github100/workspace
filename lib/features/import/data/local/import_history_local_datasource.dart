@@ -12,4 +12,9 @@ class ImportHistoryLocalDataSource {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(historyKey, json);
   }
+
+  Future<void> clearHistoryJson() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(historyKey);
+  }
 }

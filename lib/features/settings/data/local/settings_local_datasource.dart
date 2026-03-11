@@ -12,4 +12,9 @@ class SettingsLocalDataSource {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(_settingsKey, json);
   }
+
+  Future<void> clearSettingsJson() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_settingsKey);
+  }
 }

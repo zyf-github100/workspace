@@ -15,6 +15,11 @@ class ScheduleLocalDataSource {
     await preferences.setString(_semestersKey, json);
   }
 
+  Future<void> clearSemestersJson() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_semestersKey);
+  }
+
   Future<String?> loadCurrentSemesterId() async {
     final preferences = await SharedPreferences.getInstance();
     return preferences.getString(_currentSemesterIdKey);

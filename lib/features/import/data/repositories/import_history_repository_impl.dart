@@ -19,16 +19,26 @@ class ImportHistoryRepositoryImpl implements ImportHistoryRepository {
       return const <ImportHistoryEntry>[];
     }
 
-    final decoded = jsonDecode(historyJson) as List<dynamic>;
-    final entries =
-        decoded
-            .map(
-              (item) =>
-                  ImportHistoryEntry.fromJson(item as Map<String, dynamic>),
-            )
-            .toList()
-          ..sort((left, right) => right.importedAt.compareTo(left.importedAt));
-    return entries;
+    try {
+      final decoded = jsonDecode(historyJson) as List<dynamic>;
+      final entries =
+          decoded
+              .map(
+                (item) =>
+                    ImportHistoryEntry.fromJson(item as Map<String, dynamic>),
+              )
+              .toList()
+            ..sort(
+              (left, right) => right.importedAt.compareTo(left.importedAt),
+            );
+      return entries;
+    } on FormatException {
+      await _localDataSource.clearHistoryJson();
+      return const <ImportHistoryEntry>[];
+    } on TypeError {
+      await _localDataSource.clearHistoryJson();
+      return const <ImportHistoryEntry>[];
+    }
   }
 
   @override

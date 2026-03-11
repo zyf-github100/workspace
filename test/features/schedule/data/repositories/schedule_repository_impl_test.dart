@@ -106,6 +106,26 @@ void main() {
         expect(semesters, hasLength(1));
       },
     );
+
+    test(
+      'returns empty state when stored semesters json is corrupted',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          'semesters': '{broken json',
+          'current_semester_id': 'semester-1',
+        });
+
+        final repository = ScheduleRepositoryImpl(
+          localDataSource: ScheduleLocalDataSource(),
+        );
+
+        final currentSemester = await repository.loadCurrentSemester();
+        final semesters = await repository.loadSemesters();
+
+        expect(currentSemester, isNull);
+        expect(semesters, isEmpty);
+      },
+    );
   });
 }
 

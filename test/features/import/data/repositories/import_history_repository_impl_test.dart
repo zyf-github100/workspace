@@ -61,6 +61,20 @@ void main() {
       expect(history.first.id, '9');
       expect(history.last.id, '2');
     });
+
+    test('returns empty history when stored json is corrupted', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ImportHistoryLocalDataSource.historyKey: '{broken json',
+      });
+
+      final repository = ImportHistoryRepositoryImpl(
+        localDataSource: ImportHistoryLocalDataSource(),
+      );
+
+      final history = await repository.loadHistory();
+
+      expect(history, isEmpty);
+    });
   });
 }
 

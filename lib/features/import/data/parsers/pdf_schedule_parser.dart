@@ -22,18 +22,19 @@ class PdfScheduleParser implements ScheduleParser {
 
     final document = PdfDocument(inputBytes: bytes);
     try {
+      final extractor = PdfTextExtractor(document);
       final layoutText = _normalizeText(
-        PdfTextExtractor(document).extractText(layoutText: true),
+        extractor.extractText(layoutText: true),
       );
-      final rawText = _normalizeText(PdfTextExtractor(document).extractText());
+      final rawText = layoutText.isEmpty
+          ? _normalizeText(extractor.extractText())
+          : '';
       final extractedText = layoutText.isNotEmpty ? layoutText : rawText;
       if (extractedText.replaceAll(RegExp(r'\s+'), '').length < 8) {
         throw const FormatException('未从 PDF 中提取到足够文本，当前仅支持文本型 PDF。');
       }
 
-      final textLines = _toLineSnapshots(
-        PdfTextExtractor(document).extractTextLines(),
-      );
+      final textLines = _toLineSnapshots(extractor.extractTextLines());
       final courses = parseExtractedText(extractedText, textLines: textLines);
       final suggestedSectionTimes = _extractSuggestedSectionTimes(
         extractedText,

@@ -30,7 +30,7 @@ class _SchedulePageState extends State<SchedulePage> {
   late Future<Semester?> _semesterFuture;
   int _selectedWeek = 1;
   int _selectedDay = DateTime.now().weekday;
-  bool _hasInitializedWeek = false;
+  String? _lastLoadedSemesterVersion;
   _ScheduleViewMode _viewMode = _ScheduleViewMode.week;
 
   @override
@@ -42,9 +42,14 @@ class _SchedulePageState extends State<SchedulePage> {
 
   Future<Semester?> _loadPageData() async {
     final semester = await _repository.loadCurrentSemester();
-    if (semester != null && !_hasInitializedWeek) {
+    final semesterVersion = semester == null
+        ? null
+        : _semesterVersion(semester);
+    if (semester != null && semesterVersion != _lastLoadedSemesterVersion) {
       _selectedWeek = _currentWeekOfSemester(semester);
-      _hasInitializedWeek = true;
+      _lastLoadedSemesterVersion = semesterVersion;
+    } else if (semester == null) {
+      _lastLoadedSemesterVersion = null;
     }
     return semester;
   }
@@ -431,6 +436,10 @@ class _SchedulePageState extends State<SchedulePage> {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
     return '${value.year}-$month-$day';
+  }
+
+  String _semesterVersion(Semester semester) {
+    return '${semester.id}|${semester.termStartDate.toIso8601String()}';
   }
 
   Future<void> _showCourseDetails(Semester semester, List<Course> courses) {

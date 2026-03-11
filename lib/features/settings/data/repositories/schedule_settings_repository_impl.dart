@@ -17,8 +17,16 @@ class ScheduleSettingsRepositoryImpl implements ScheduleSettingsRepository {
       return ScheduleSettings.defaults();
     }
 
-    final decoded = jsonDecode(json) as Map<String, dynamic>;
-    return ScheduleSettings.fromJson(decoded);
+    try {
+      final decoded = jsonDecode(json) as Map<String, dynamic>;
+      return ScheduleSettings.fromJson(decoded);
+    } on FormatException {
+      await _localDataSource.clearSettingsJson();
+      return ScheduleSettings.defaults();
+    } on TypeError {
+      await _localDataSource.clearSettingsJson();
+      return ScheduleSettings.defaults();
+    }
   }
 
   @override
